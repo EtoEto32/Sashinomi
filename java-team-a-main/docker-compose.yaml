@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  app:
+    build: ./
+    container_name: app
+    ports:
+      - 8080:8080
+      - 5050:5050 # デバッグ用
+    volumes:
+      - ./project:/app
+      - /app/.gradle
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    tty: true
+    stdin_open: true
+    platform: linux/amd64
+    depends_on: #サービス間の依存関係を指定
+      db:
+        condition: service_started
+    command: sh ./gradlew bootRun -q --stacktrace
+  db:
+    image: mysql:8.0
+    container_name: DB
+    restart: always
+    ports: #ローカルでmysqld.exeが動いているため、ホスト側のポートを3330に変更
+      - 3330:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_USER: jun
+      MYSQL_DATABASE: demo
+      MYSQL_PASSWORD: test
+      TZ: Asia/Tokyo
+    volumes:
+      - ./docker/mysql:/docker-entrypoint-initdb.d #DB作成時に実行するファイル(クエリ)
+      - ./docker/mysql/mysql.cnf:/etc/mysql/conf.d/mysql.cnf
